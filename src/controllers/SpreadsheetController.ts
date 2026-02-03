@@ -1,11 +1,12 @@
-// src/controllers/SpreadsheetController.js
+import type { Request, Response } from 'express';
+// Lembre-se de importar o Service com .js no final para o ESM
+import { SpreadsheetService } from '../services/SpreadsheetService.js';
 
-class SpreadsheetController {
-  constructor(spreadsheetService) {
-    this.spreadsheetService = spreadsheetService;
-  }
+export class SpreadsheetController {
+  // No TS, declarar o service no constructor como private já cria a variável automaticamente
+  constructor(private spreadsheetService: SpreadsheetService) {}
 
-  async sendMonthlyReport(req, res) {
+  async sendMonthlyReport(req: Request, res: Response): Promise<Response> {
     try {
       const { emailEnvio, destinatario, horas, mesVigente } = req.body;
 
@@ -26,7 +27,7 @@ class SpreadsheetController {
         message: `Planilha de ${mesVigente} enviada com sucesso para ${destinatario}!` 
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no Controller:', error);
       return res.status(500).json({ 
         message: 'Erro interno ao processar a planilha.',
@@ -35,5 +36,3 @@ class SpreadsheetController {
     }
   }
 }
-
-module.exports = SpreadsheetController;
