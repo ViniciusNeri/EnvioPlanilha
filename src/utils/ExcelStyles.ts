@@ -1,4 +1,4 @@
-import type { IMailProvider } from '../providers/MailProvider/models/IMailProvider.js';
+import type { IMailProvider } from '../providers/MailProvider/interface/IMailProvider.js';
 import ExcelJS from 'exceljs';
 import { 
   startOfMonth, 

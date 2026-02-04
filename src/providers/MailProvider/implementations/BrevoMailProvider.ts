@@ -1,7 +1,7 @@
 // src/shared/container/providers/MailProvider/implementations/BrevoMailProvider.ts
 
 import * as Brevo from '@getbrevo/brevo';
-import type { IMailProvider, ISendMailDTO } from '../models/IMailProvider.js';
+import type { IMailProvider, ISendMailDTO } from '../interface/IMailProvider.js';
 
 export class BrevoMailProvider implements IMailProvider {
   private apiInstance: Brevo.TransactionalEmailsApi;

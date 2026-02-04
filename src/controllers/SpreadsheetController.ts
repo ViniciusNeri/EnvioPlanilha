@@ -17,7 +17,6 @@ export class SpreadsheetController {
       }
 
       await this.spreadsheetService.generateAndSend({
-        emailEnvio,
         destinatario,
         horas,
         mesVigente
