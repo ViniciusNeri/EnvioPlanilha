@@ -1,17 +1,15 @@
 import express from 'express';
-// Use "import type" para os tipos do Express
 import type { Request, Response, NextFunction, Application } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import { routes } from './routes/index.js';
+import mongoose from 'mongoose';
 
 class App {
-  // Declaramos o tipo da propriedade server
   public server: Application;
 
   constructor() {
     this.server = express();
-    
     this.middlewares();
     this.routes();
     this.exceptionHandler();
@@ -23,7 +21,6 @@ class App {
   }
 
   private routes(): void {
-    // Agora usando o prefixo v1 com as rotas que exportamos como objeto
     this.server.use('/api/v1', routes);
   }
 
@@ -35,15 +32,29 @@ class App {
   }
 }
 
-// Instanciamos a classe e exportamos o servidor express
-const app = new App().server;
+// Função principal para iniciar a aplicação
+async function startApp() {
+  try {
+    // 1. Conecta ao Banco Primeiro
+    await mongoose.connect(process.env.MONGO_URL as string);
+    console.log('🍃 MongoDB conectado com sucesso!');
 
-const PORT = process.env.PORT || 3000;
+    // 2. Só instancia o App e inicia o listen após o banco estar OK
+    const app = new App().server;
+    const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log('\n' + '='.repeat(40));
-  console.log(`🚀 SERVIDOR TS INICIADO`);
-  console.log(`📡 URL: http://localhost:${PORT}/api/v1`);
-  console.log(`📂 Rota: /enviar-planilha`);
-  console.log('='.repeat(40) + '\n');
-});
+    app.listen(PORT, () => {
+      console.log('\n' + '='.repeat(40));
+      console.log(`🚀 SERVIDOR TS INICIADO`);
+      console.log(`📡 URL: http://localhost:${PORT}/api/v1`);
+      console.log(`📂 Rota: /enviar-planilha`);
+      console.log('='.repeat(40) + '\n');
+    });
+
+  } catch (error) {
+    console.error('❌ Falha ao iniciar aplicação:', error);
+    process.exit(1);
+  }
+}
+
+startApp();
