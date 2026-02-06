@@ -1,8 +1,8 @@
 // src/shared/container.ts
 import { BrevoMailProvider } from '../providers/MailProvider/implementations/BrevoMailProvider.js';
-import { HybridHolidayRepository } from '../repositories/implementations/HybridHolidayRepository.js';
-import { SpreadsheetService } from '../services/implementations/SpreadsheetService.js';
-import { SpreadsheetController } from '../controllers/SpreadsheetController.js';
+import { HybridHolidayRepository } from '../modules/spreadsheet/repositories/implementations/HybridHolidayRepository.js';
+import { SpreadsheetService } from '../modules/spreadsheet/services/implementations/SpreadsheetService.js';
+import { SpreadsheetController } from '../modules/spreadsheet/controllers/SpreadsheetController.js';
 import { ExcelProvider } from '../providers/ExcelProvider/implementations/ExcelProvider.js';
 import { MongoUserRepository } from '../modules/accounts/repositories/implementations/MongoUserRepository.js';
 import { UserService } from '../modules/accounts/services/implementations/UserService.js';

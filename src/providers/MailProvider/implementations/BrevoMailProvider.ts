@@ -35,7 +35,7 @@ export class BrevoMailProvider implements IMailProvider {
       await this.apiInstance.sendTransacEmail(sendSmtpEmail);
     } catch (error) {
       console.error(error);
-      throw new Error("Falha ao enviar e-mail.");
+      throw new Error("Falha ao enviar e-mail.");  
     }
   }
 }
