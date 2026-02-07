@@ -1,5 +1,7 @@
+import type { User } from "../../../accounts/entities/User.js";
+
 export interface IGenerateAndSendDTO {
-  destinatario: string;
+  user : User
   horas: number;
   mesVigente: string;
 }
@@ -11,10 +13,8 @@ export interface ILancamento {
 }
 
 export interface IGenerateCustomRequest {
-  nomeProfissional: string;
-  nomeEmpresa: string;
+  user : User
   mesVigente: string;
-  destinatario: string;
   lancamentos: ILancamento[];
 }
 

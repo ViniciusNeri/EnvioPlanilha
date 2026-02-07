@@ -9,21 +9,19 @@ import { ptBR } from 'date-fns/locale';
 
 import type { IMailProvider } from '../../../../providers/MailProvider/interface/IMailProvider.js';
 import type { IHolidayRepository } from '../../repositories/interface/IHolidayRepository.js';
-import type { ISpreadsheetService, IGenerateAndSendDTO } from '../interface/ISpreadsheetService.js';
+import type { ISpreadsheetService, IGenerateAndSendDTO ,IGenerateCustomRequest } from '../interface/ISpreadsheetService.js';
 import type { IExcelProvider } from '../../../../providers/ExcelProvider/interface/IExcelProvider.js';
 
 export class SpreadsheetService implements ISpreadsheetService {
-  // Recebemos as instâncias diretamente no constructor (Injeção manual)
   constructor(
     private mailProvider: IMailProvider,
     private excelProvider: IExcelProvider,
     private holidayRepository: IHolidayRepository
   ) {}
 
-  async generateAndSend({ destinatario, horas, mesVigente }: IGenerateAndSendDTO): Promise<void> {
+  async generateAndSend({ user, horas, mesVigente }: IGenerateAndSendDTO): Promise<void> {
     const anoAtual = new Date().getFullYear();
     
-    // 1. Mapeamento de Meses
     const mesesMap: Record<string, number> = {
       'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3, 'maio': 4, 'junho': 5,
       'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
@@ -35,14 +33,16 @@ export class SpreadsheetService implements ISpreadsheetService {
       throw new Error(`Mês inválido informado: ${mesVigente}`);
     }
 
+    if (!user.managerEmail) {
+      throw new Error("E-mail do gestor não encontrado para este usuário.");
+    }
+
     // 2. Lógica de Datas e Feriados
     const dataBase = new Date(anoAtual, numeroMes, 1);
     const diasDoMes = eachDayOfInterval({
       start: startOfMonth(dataBase),
       end: endOfMonth(dataBase)
     });
-
-    //const feriadosNacionais = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'];
 
     const feriados = await this.holidayRepository.listAll();
 
@@ -86,7 +86,7 @@ export class SpreadsheetService implements ISpreadsheetService {
     const colunas = [
       { header: 'DATA', key: 'data', width: 15 },
       { header: 'DIA DA SEMANA', key: 'diaSemana', width: 20 },
-      { header: 'HORAS TRABALHADAS', key: 'horasDia', width: 22 },
+      { header: 'HORAS TRABALHADAS', key: 'horasDia', width: 26 },
     ];
 
     const buffer = await this.excelProvider.generateBuffer(
@@ -94,9 +94,9 @@ export class SpreadsheetService implements ISpreadsheetService {
       colunas,
       linhasParaPlanilha,
       horas,{
-        profissional: 'Vinicius Neri',
-        empresa: 'Cinemark',
-        mes: mesVigente
+        profissional: user.name,
+        empresa: user.companyName!,
+        mes: `${mesVigente} - ${anoAtual}`
       }
     );
 
@@ -104,7 +104,8 @@ export class SpreadsheetService implements ISpreadsheetService {
     const nomeArquivo = `Relatorio_Horas_${nomeMesSeguro}_${anoAtual}.xlsx`;
 
     await this.mailProvider.sendMail({
-      to: destinatario,
+      to: user.managerEmail!,
+      copy: user.receiveCopy ? user.email : undefined!,
       subject: `Relatório de Horas - ${mesVigente}`,
       body: `<p>Olá, segue em anexo o relatório detalhado de <strong>${mesVigente}</strong>.</p>`,
       attachments: [{
@@ -114,20 +115,17 @@ export class SpreadsheetService implements ISpreadsheetService {
     });
   }
 
-    async generateCustomReportAndEmail(dados: {
-    nomeProfissional: string;
-    nomeEmpresa: string;
-    mesVigente: string;
-    destinatario: string; // E-mail para onde enviar
-    lancamentos: any[];  // O array que vem do Flutter
-  }): Promise<Buffer> {
+
+    async generateCustomReportAndEmail({ user, mesVigente, lancamentos }: IGenerateCustomRequest): Promise<Buffer> {
     
     // 1. Calcula o total de horas somando o que veio do Flutter
-    const totalHoras = dados.lancamentos.reduce((acc, curr) => acc + Number(curr.horas), 0);
+    const totalHoras = lancamentos.reduce((acc, curr) => acc + Number(curr.horas), 0);
+    const anoAtual = new Date().getFullYear();
+    const nomeMesSeguro = mesVigente.replace(/[/\\?*:[\]]/g, '-');
 
     // 2. Formata os dados para o ExcelProvider
     // Aqui garantimos que o dia da semana esteja traduzido e bonitinho
-    const linhasFormatadas = dados.lancamentos.map(l => ({
+    const linhasFormatadas = lancamentos.map(l => ({
       data: format(new Date(l.data), 'dd/MM/yyyy'),
       diaSemana: l.diaSemana, // Já vem do Flutter/GetPrepare
       horasDia: l.horas
@@ -146,20 +144,20 @@ export class SpreadsheetService implements ISpreadsheetService {
       linhasFormatadas,
       totalHoras,
       {
-        profissional: dados.nomeProfissional,
-        empresa: dados.nomeEmpresa,
-        mes: dados.mesVigente
+        profissional: user.name,
+        empresa: user.companyName!,
+        mes: mesVigente
       }
     );
 
     // 4. Dispara o E-mail com o anexo
     await this.mailProvider.sendMail({
-      to: dados.destinatario,
-      subject: `Relatório de Horas - ${dados.nomeProfissional} - ${dados.mesVigente}`,
-      body: `Olá,\n\nSegue em anexo o relatório de horas referente ao mês de ${dados.mesVigente}.\n\nAtenciosamente,\n${dados.nomeProfissional}`,
+      to: user.managerEmail!,
+      subject: `Relatório de Horas - ${user.name} - ${mesVigente}`,
+      body: `Olá,\n\nSegue em anexo o relatório de horas referente ao mês de ${mesVigente}.\n\nAtenciosamente,\n${user.name}`,
       attachments: [
         {
-          name: `Relatorio_Horas_${dados.mesVigente}.xlsx`,
+          name: `Relatorio_Horas_${nomeMesSeguro}_${anoAtual}.xlsx`,
           content: buffer
         }
       ]
@@ -200,7 +198,7 @@ export class SpreadsheetService implements ISpreadsheetService {
         data: dataFormatada,
         diaSemana: format(dia, 'eeee', { locale: ptBR }),
         tipo: eFer ? 'Feriado' : (eFds ? 'Final de Semana' : 'Útil'),
-        sugestaoHoras: (eFer || eFds) ? 0 : 8 // Sugere 0h para folgas e 8h para dias úteis
+        sugestaoHoras: (eFer || eFds) ? 0 : 8 
       };
     });
   }

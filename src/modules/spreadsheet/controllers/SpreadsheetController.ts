@@ -1,29 +1,40 @@
 import type { Request, Response } from 'express';
-// Lembre-se de importar o Service com .js no final para o ESM
 import type { ISpreadsheetService } from '../services/interface/ISpreadsheetService.js';
+import type { IUserService } from '../../accounts/services/interface/IUserService.js';
 
 export class SpreadsheetController {
-  // No TS, declarar o service no constructor como private já cria a variável automaticamente
-  constructor(private spreadsheetService: ISpreadsheetService) {}
+  constructor(private spreadsheetService: ISpreadsheetService, private userService: IUserService) {}
 
     sendMonthlyReport = async (req: Request, res: Response): Promise<Response> => {
       try {
-        const { emailEnvio, destinatario, horas, mesVigente } = req.body;
+        const { horas, mesVigente } = req.body;
 
-        if (!emailEnvio || !destinatario || !horas || !mesVigente) {
+        const userId = req.user.id;
+
+        if (!userId) {
+          return res.status(401).json({ message: 'Usuário não autenticado.' });
+        }
+
+        const user = await this.userService.findById(userId);
+
+        if (!user) {
+          return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        if (!horas || !mesVigente) {
           return res.status(400).json({ 
-            message: 'Faltam parâmetros obrigatórios: emailEnvio, destinatario, horas, mesVigente.' 
+            message: 'Faltam parâmetros obrigatórios: horas, mesVigente.' 
           });
         }
 
         await this.spreadsheetService.generateAndSend({
-          destinatario,
+          user,
           horas,
           mesVigente
         });
 
         return res.status(200).json({ 
-          message: `Planilha de ${mesVigente} enviada com sucesso para ${destinatario}!` 
+          message: `Planilha de ${mesVigente} enviada com sucesso para ${user.managerEmail}!` 
         });
 
       } catch (error: any) {
@@ -38,6 +49,18 @@ export class SpreadsheetController {
     prepareMonth = async (req: Request, res: Response): Promise<Response> => {
       try {
         const { mes, ano } = req.query;
+
+        const userId = req.user.id;
+
+        if (!userId) {
+          return res.status(401).json({ message: 'Usuário não autenticado.' });
+        }
+        
+        const user = await this.userService.findById(userId);
+
+        if (!user) {
+          return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
 
         if (!mes || !ano) {
           return res.status(400).json({ error: 'Mês e ano são obrigatórios.' });
@@ -57,30 +80,37 @@ export class SpreadsheetController {
     generateCustomReport = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { 
-        nomeProfissional, 
-        nomeEmpresa, 
         mesVigente, 
-        destinatario,
         lancamentos 
       } = req.body;
 
+      const userId = req.user.id;
+
+        if (!userId) {
+          return res.status(401).json({ message: 'Usuário não autenticado.' });
+        }
+        
+        const user = await this.userService.findById(userId);
+
+        if (!user) {
+          return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
       // Validação básica
-      if (!lancamentos || !destinatario) {
+      if (!lancamentos || !mesVigente) {
         return res.status(400).json({ error: 'Dados insuficientes para gerar e enviar o relatório.' });
       }
 
       const buffer = await this.spreadsheetService.generateCustomReportAndEmail({
-        nomeProfissional,
-        nomeEmpresa,
+        user,
         mesVigente,
-        destinatario,
         lancamentos
       });
 
       // Opcional: Você pode enviar o JSON de sucesso 
       // ou enviar o buffer para download local no app
       return res.status(200).json({ 
-        message: 'Planilha gerada e enviada com sucesso para ' + destinatario 
+        message: 'Planilha gerada e enviada com sucesso para ' + user.managerEmail!
       });
 
     } catch (error: any) {

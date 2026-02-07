@@ -11,17 +11,19 @@ import { AuthenticateController } from '../../modules/accounts/controllers/Authe
 import { AuthenticateUserService } from '../../modules/accounts/services/implementations/AuthenticateUserService.js';
 
 
-const mailProvider = new BrevoMailProvider();
-const excelProvider = new ExcelProvider();
-const hybridHolidayRepository = new HybridHolidayRepository();
-const spreadsheetService = new SpreadsheetService(mailProvider, excelProvider, hybridHolidayRepository);
-const spreadsheetController = new SpreadsheetController(spreadsheetService);
-
-
 const userRepository = new MongoUserRepository();
 const userService = new UserService(userRepository);
 const userController = new UserController(userService);
 const authenticateUserService = new AuthenticateUserService(userRepository);
 const authenticateController = new AuthenticateController(authenticateUserService);
+
+const mailProvider = new BrevoMailProvider();
+const excelProvider = new ExcelProvider();
+const hybridHolidayRepository = new HybridHolidayRepository();
+const spreadsheetService = new SpreadsheetService(mailProvider, excelProvider, hybridHolidayRepository);
+const spreadsheetController = new SpreadsheetController(spreadsheetService, userService);
+
+
+
 
 export { spreadsheetController , userController, authenticateController };

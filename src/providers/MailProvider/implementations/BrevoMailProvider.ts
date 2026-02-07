@@ -14,11 +14,14 @@ export class BrevoMailProvider implements IMailProvider {
     );
   }
 
-  async sendMail({ to, subject, body, attachments }: ISendMailDTO): Promise<void> {
+  async sendMail({ to, copy, subject, body, attachments }: ISendMailDTO): Promise<void> {
     const sendSmtpEmail = new Brevo.SendSmtpEmail();
 
-    sendSmtpEmail.sender = { name: "Planilha de horas", email: "viniciusneri7@gmail.com" };
+    sendSmtpEmail.sender = { name: "Vinicius Neri", email: "viniciusneri7@gmail.com" };
     sendSmtpEmail.to = [{ email: to }];
+    if (copy) {
+      sendSmtpEmail.cc = [{ email: copy }];
+    }
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = body;
 

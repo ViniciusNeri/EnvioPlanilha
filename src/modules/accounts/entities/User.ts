@@ -5,7 +5,10 @@ export class User {
   name!: string;
   email!: string;
   password!: string;
-  createdAt?: Date;
+  createdAt?: Date;   
+  companyName?: string;
+  managerEmail?: string;
+  receiveCopy?: boolean;
 
   constructor() {
     if (!this.id) {

@@ -7,6 +7,7 @@ export interface IAttachment {
 
 export interface ISendMailDTO {
   to: string;
+  copy?: string;
   subject: string;
   body: string;
   attachments?: IAttachment[];
