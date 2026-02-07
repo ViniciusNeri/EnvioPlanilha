@@ -5,6 +5,7 @@ export interface IAuthenticateResponse {
   user: {
     name: string;
     email: string;
+    id: string;
   };
   token: string;
 }
