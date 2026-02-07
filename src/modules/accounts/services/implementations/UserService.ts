@@ -7,7 +7,7 @@ export class UserService implements IUserService {
   constructor(private userRepository: IUserRepository) {}
 
   // CREATE: Lógica de cadastro
-  async create({ name, email, password}: User): Promise<void> {
+  async create({ name, email, password, companyName, managerEmail, receiveCopy}: User): Promise<void> {
     const userAlreadyExists = await this.userRepository.findByEmail(email);
 
     if (userAlreadyExists) {
@@ -21,6 +21,9 @@ export class UserService implements IUserService {
       name,
       email,
       password: passwordHash,
+      companyName,
+      managerEmail,
+      receiveCopy,
       createdAt: new Date()
     });
 

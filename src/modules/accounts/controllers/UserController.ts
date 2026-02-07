@@ -8,9 +8,9 @@ export class UserController {
   // POST /users
   async create(req: Request, res: Response): Promise<Response> {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password, companyName, managerEmail, receiveCopy } = req.body;
       
-      await this.userService.create({ name, email, password });
+      await this.userService.create({ name, email, password, companyName, managerEmail, receiveCopy });
       
       return res.status(201).json({ message: "Usuário criado com sucesso!" });
     } catch (error: any) {
