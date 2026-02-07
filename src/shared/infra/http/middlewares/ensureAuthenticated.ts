@@ -26,7 +26,7 @@ export function ensureAuthenticated(
     if (token === undefined) {
       throw new Error(`Token inválido ou não fornecido.`);    
     }
-    const { sub: user_id } = verify(token, "secret-key-super-forte-123") as IPayload;
+    const { sub: user_id } = verify(token, process.env.JWT_SECRET_KEY as string) as IPayload;
 
     // Injetamos o ID do usuário no Request para uso futuro
     req.user = {

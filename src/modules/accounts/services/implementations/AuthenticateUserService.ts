@@ -21,7 +21,7 @@ export class AuthenticateUserService implements IAuthenticateUserService {
     }
 
     // Gerando o Token JWT
-    const token = sign({}, "secret-key-super-forte-123", {
+    const token = sign({}, process.env.JWT_SECRET_KEY as string, {
       subject: user.id,
       expiresIn: "1d",
     });
