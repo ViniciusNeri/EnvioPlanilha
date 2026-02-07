@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { routes } from './routes/index.js';
 import mongoose from 'mongoose';
 
+
 class App {
   public server: Application;
 
@@ -41,7 +42,7 @@ async function startApp() {
 
     // 2. Só instancia o App e inicia o listen após o banco estar OK
     const app = new App().server;
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 3000;  
 
     app.listen(PORT, () => {
       console.log('\n' + '='.repeat(40));

@@ -28,7 +28,4 @@ routes.put('/users/:id', (req, res) => userController.update(req, res));
 
 routes.post('/sessions', (req, res) => authenticateController.handle(req, res));
 
-
-
-
 export { routes };
