@@ -13,7 +13,6 @@ export interface IExtraInfo {
 export interface IExcelProvider {
   generateBuffer(
     abaNome: string,
-    colunas: any[],
     linhas: IExcelData[],
     total: number,
     extraInfo: IExtraInfo

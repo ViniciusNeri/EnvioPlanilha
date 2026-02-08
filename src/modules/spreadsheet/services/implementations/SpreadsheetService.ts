@@ -9,10 +9,15 @@ import { ptBR } from 'date-fns/locale';
 
 import type { IMailProvider } from '../../../../providers/MailProvider/interface/IMailProvider.js';
 import type { IHolidayRepository } from '../../repositories/interface/IHolidayRepository.js';
-import type { ISpreadsheetService, IGenerateAndSendDTO ,IGenerateCustomRequest } from '../interface/ISpreadsheetService.js';
+import type { ISpreadsheetService, IGenerateAndSendDTO, IGenerateCustomRequest } from '../interface/ISpreadsheetService.js';
 import type { IExcelProvider } from '../../../../providers/ExcelProvider/interface/IExcelProvider.js';
 
 export class SpreadsheetService implements ISpreadsheetService {
+  private readonly mesesMap: Record<string, number> = {
+    'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3, 'maio': 4, 'junho': 5,
+    'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
+  };
+
   constructor(
     private mailProvider: IMailProvider,
     private excelProvider: IExcelProvider,
@@ -21,101 +26,42 @@ export class SpreadsheetService implements ISpreadsheetService {
 
   async generateAndSend({ user, horas, mesVigente }: IGenerateAndSendDTO): Promise<void> {
     const anoAtual = new Date().getFullYear();
-    
-    const mesesMap: Record<string, number> = {
-      'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3, 'maio': 4, 'junho': 5,
-      'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
-    };
-
-    const numeroMes = mesesMap[mesVigente.toLowerCase()];
-
-    if (numeroMes === undefined) {
-      throw new Error(`Mês inválido informado: ${mesVigente}`);
-    }
+    const numeroMes = this.getNumeroMes(mesVigente);
 
     if (!user.managerEmail) {
       throw new Error("E-mail do gestor não encontrado para este usuário.");
     }
 
-    const dataBase = new Date(anoAtual, numeroMes, 1);
-    const diasDoMes = eachDayOfInterval({
-      start: startOfMonth(dataBase),
-      end: endOfMonth(dataBase)
-    });
-
     const feriados = await this.holidayRepository.listAll();
+    const diasDoMes = this.getDiasDoIntervalo(anoAtual, numeroMes);
 
-    const diasTrabalho = diasDoMes.filter(dia => {
-      const eFds = isWeekend(dia);
-      const eFer = feriados.includes(format(dia, 'MM-dd'));
-      return !eFds && !eFer;
-    });
-
+    const diasTrabalho = diasDoMes.filter(dia => this.isDiaUtil(dia, feriados));
+    
     const horasPorDia = Math.floor(horas / diasTrabalho.length);
     let horasRestantes = horas % diasTrabalho.length;
 
-    const linhasParaPlanilha = diasDoMes.map(dia => {
-      const dataFormatada = format(dia, 'MM-dd');
+    const linhasPlanilha = diasDoMes.map(dia => {
       const eFds = isWeekend(dia);
-      const eFer = feriados.includes(dataFormatada);
-      
+      const eFer = feriados.includes(format(dia, 'MM-dd'));
       let label: string | number = '-';
 
       if (!eFds && !eFer) {
-        const horasLancadas = horasPorDia + (horasRestantes > 0 ? 1 : 0);
+        label = horasPorDia + (horasRestantes > 0 ? 1 : 0);
         if (horasRestantes > 0) horasRestantes--;
-        label = horasLancadas;
       } else if (eFer) {
         label = 'FERIADO';
       }
 
-      return {
-        data: format(dia, 'dd/MM/yyyy'),
-        diaSemana: format(dia, 'eeee', { locale: ptBR }).toUpperCase(),
-        horasDia: label
-      };
+      return this.formatarLinha(dia, label);
     });
 
-    const nomeMesSeguro = mesVigente.replace(/[/\\?*:[\]]/g, '-');
-    const nomeAba = `Horas - ${nomeMesSeguro} ${anoAtual}`;
-    
-    const colunas = [
-      { header: 'DATA', key: 'data', width: 15 },
-      { header: 'DIA DA SEMANA', key: 'diaSemana', width: 20 },
-      { header: 'HORAS TRABALHADAS', key: 'horasDia', width: 26 },
-    ];
-
-    const buffer = await this.excelProvider.generateBuffer(
-      nomeAba,
-      colunas,
-      linhasParaPlanilha,
-      horas,{
-        profissional: user.name,
-        empresa: user.companyName!,
-        mes: `${mesVigente} - ${anoAtual}`
-      }
-    );
-
-    const nomeArquivo = `Relatório_horas_${nomeMesSeguro}_${anoAtual}.xlsx`;
-
-    await this.mailProvider.sendMail({
-      to: user.managerEmail!,
-      copy: user.receiveCopy ? user.email : undefined!,
-      subject: `Relatório de Horas - ${mesVigente}`,
-      body: `<p>Olá, segue em anexo o relatório detalhado de <strong>${mesVigente}</strong>.</p>`,
-      attachments: [{
-        name: nomeArquivo,
-        content: buffer as any,
-      }]
-    });
+    const buffer = await this.generateExcel(user, mesVigente, anoAtual, linhasPlanilha, horas);
+    await this.sendEmail(user, mesVigente, anoAtual, buffer);
   }
 
-
-    async generateCustomReportAndEmail({ user, mesVigente, lancamentos }: IGenerateCustomRequest): Promise<Buffer> {
-       
+  async generateCustomReportAndEmail({ user, mesVigente, lancamentos }: IGenerateCustomRequest): Promise<void> {
     const totalHoras = lancamentos.reduce((acc, curr) => acc + Number(curr.horas), 0);
     const anoAtual = new Date().getFullYear();
-    const nomeMesSeguro = mesVigente.replace(/[/\\?*:[\]]/g, '-');
     
     const linhasFormatadas = lancamentos.map(l => ({
       data: format(new Date(l.data), 'dd/MM/yyyy'),
@@ -123,74 +69,79 @@ export class SpreadsheetService implements ISpreadsheetService {
       horasDia: l.horas
     }));
 
-    const colunas = [
-      { header: 'DATA', key: 'data' },
-      { header: 'DIA DA SEMANA', key: 'diaSemana' },
-      { header: 'HORAS', key: 'horasDia' }
-    ];
-
-    const buffer = await this.excelProvider.generateBuffer(
-      'Relatório de Horas',
-      colunas,
-      linhasFormatadas,
-      totalHoras,
-      {
-        profissional: user.name,
-        empresa: user.companyName!,
-        mes: mesVigente
-      }
-    );
-
-    await this.mailProvider.sendMail({
-      to: user.managerEmail!,
-      copy: user.receiveCopy ? user.email : undefined!,
-      subject: `Relatório de Horas - ${user.name} - ${mesVigente}`,
-      body: `Olá,\n\nSegue em anexo o relatório de horas referente ao mês de ${mesVigente}.\n\nAtenciosamente,\n${user.name}`,
-      attachments: [
-        {
-          name: `Relatório_horas_${nomeMesSeguro}_${anoAtual}.xlsx`,
-          content: buffer
-        }
-      ]
-    });
-
-    return buffer;
+    const buffer = await this.generateExcel(user, mesVigente, anoAtual, linhasFormatadas, totalHoras);
+    await this.sendEmail(user, mesVigente, anoAtual, buffer);
   }
 
-    async getFullMonthDays(mesVigente: string, ano: number) {
+  async getFullMonthDays(mesVigente: string, ano: number) {
     const feriados = await this.holidayRepository.listAll();
-    
-    const mesesMap: Record<string, number> = { 
-      'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3, 
-      'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7, 
-      'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11 
-    };
+    const dias = this.getDiasDoIntervalo(ano, this.getNumeroMes(mesVigente));
 
-    const numeroMes = mesesMap[mesVigente.toLowerCase()];
-
-    if (numeroMes === undefined) {
-      throw new Error(`Mês inválido: ${mesVigente}`);
-    }
-
-    const dataBase = new Date(ano, numeroMes, 1);
-    
-    const todosOsDias = eachDayOfInterval({
-      start: startOfMonth(dataBase),
-      end: endOfMonth(dataBase)
-    });
-
-    return todosOsDias.map(dia => {
-      const dataFormatada = format(dia, 'yyyy-MM-dd');
-      const dataMesDia = format(dia, 'MM-dd');
+    return dias.map(dia => {
       const eFds = isWeekend(dia);
-      const eFer = feriados.includes(dataMesDia);
+      const eFer = feriados.includes(format(dia, 'MM-dd'));
 
       return {
-        data: dataFormatada,
+        data: format(dia, 'yyyy-MM-dd'),
         diaSemana: format(dia, 'eeee', { locale: ptBR }),
         tipo: eFer ? 'Feriado' : (eFds ? 'Final de Semana' : 'Útil'),
         sugestaoHoras: (eFer || eFds) ? 0 : 8 
       };
+    });
+  }
+
+  private getNumeroMes(mes: string): number {
+    const numero = this.mesesMap[mes.toLowerCase()];
+    if (numero === undefined) throw new Error(`Mês inválido informado: ${mes}`);
+    return numero;
+  }
+
+  private getDiasDoIntervalo(ano: number, mes: number): Date[] {
+    const dataBase = new Date(ano, mes, 1);
+    return eachDayOfInterval({
+      start: startOfMonth(dataBase),
+      end: endOfMonth(dataBase)
+    });
+  }
+
+  private isDiaUtil(dia: Date, feriados: string[]): boolean {
+    return !isWeekend(dia) && !feriados.includes(format(dia, 'MM-dd'));
+  }
+
+  private formatarLinha(dia: Date, horas: string | number) {
+    return {
+      data: format(dia, 'dd/MM/yyyy'),
+      diaSemana: format(dia, 'eeee', { locale: ptBR }).toUpperCase(),
+      horasDia: horas
+    };
+  }
+
+  private async generateExcel(user: any, mes: string, ano: number, linhas: any[], totalHoras: number): Promise<Buffer> {
+
+    return this.excelProvider.generateBuffer(
+      `Horas - ${mes} ${ano}`,
+      linhas,
+      totalHoras,
+      {
+        profissional: user.name,
+        empresa: user.companyName!,
+        mes: `${mes} - ${ano}`
+      }
+    );
+  }
+
+  private async sendEmail(user: any, mes: string, ano: number, buffer: Buffer): Promise<void> {
+    const nomeMesSeguro = mes.replace(/[/\\?*:[\]]/g, '-');
+    
+    await this.mailProvider.sendMail({
+      to: user.managerEmail!,
+      copy: user.receiveCopy ? user.email : undefined!,
+      subject: `Relatório de Horas - ${user.name} - ${mes}`,
+      body: `<p>Olá, segue em anexo o relatório de horas referente ao mês de <strong>${mes}</strong>.</p><p>Atenciosamente,<br>${user.name}</p>`,
+      attachments: [{
+        name: `Relatório_horas_${nomeMesSeguro}_${ano}.xlsx`,
+        content: buffer as any,
+      }]
     });
   }
 }

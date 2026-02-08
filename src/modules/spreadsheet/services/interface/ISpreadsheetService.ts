@@ -21,5 +21,5 @@ export interface IGenerateCustomRequest {
 export interface ISpreadsheetService {
   generateAndSend(data: IGenerateAndSendDTO): Promise<void>;
   getFullMonthDays(mes: string, ano: number): Promise<any[]>;
-  generateCustomReportAndEmail(dados: IGenerateCustomRequest): Promise<Buffer>;
+  generateCustomReportAndEmail(dados: IGenerateCustomRequest): Promise<void>;
 }

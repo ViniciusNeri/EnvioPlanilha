@@ -96,19 +96,16 @@ export class SpreadsheetController {
           return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
 
-      // Validação básica
       if (!lancamentos || !mesVigente) {
         return res.status(400).json({ error: 'Dados insuficientes para gerar e enviar o relatório.' });
       }
 
-      const buffer = await this.spreadsheetService.generateCustomReportAndEmail({
+      await this.spreadsheetService.generateCustomReportAndEmail({
         user,
         mesVigente,
         lancamentos
       });
 
-      // Opcional: Você pode enviar o JSON de sucesso 
-      // ou enviar o buffer para download local no app
       return res.status(200).json({ 
         message: 'Planilha gerada e enviada com sucesso para ' + user.managerEmail!
       });
