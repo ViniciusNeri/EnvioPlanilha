@@ -101,7 +101,7 @@ export class SpreadsheetService implements ISpreadsheetService {
     );
 
     // 6. Envio do E-mail
-    const nomeArquivo = `Relatorio_Horas_${nomeMesSeguro}_${anoAtual}.xlsx`;
+    const nomeArquivo = `Relatório_horas_${nomeMesSeguro}_${anoAtual}.xlsx`;
 
     await this.mailProvider.sendMail({
       to: user.managerEmail!,
@@ -117,14 +117,11 @@ export class SpreadsheetService implements ISpreadsheetService {
 
 
     async generateCustomReportAndEmail({ user, mesVigente, lancamentos }: IGenerateCustomRequest): Promise<Buffer> {
-    
-    // 1. Calcula o total de horas somando o que veio do Flutter
+       
     const totalHoras = lancamentos.reduce((acc, curr) => acc + Number(curr.horas), 0);
     const anoAtual = new Date().getFullYear();
     const nomeMesSeguro = mesVigente.replace(/[/\\?*:[\]]/g, '-');
-
-    // 2. Formata os dados para o ExcelProvider
-    // Aqui garantimos que o dia da semana esteja traduzido e bonitinho
+    
     const linhasFormatadas = lancamentos.map(l => ({
       data: format(new Date(l.data), 'dd/MM/yyyy'),
       diaSemana: l.diaSemana, // Já vem do Flutter/GetPrepare
@@ -153,11 +150,12 @@ export class SpreadsheetService implements ISpreadsheetService {
     // 4. Dispara o E-mail com o anexo
     await this.mailProvider.sendMail({
       to: user.managerEmail!,
+      copy: user.receiveCopy ? user.email : undefined!,
       subject: `Relatório de Horas - ${user.name} - ${mesVigente}`,
       body: `Olá,\n\nSegue em anexo o relatório de horas referente ao mês de ${mesVigente}.\n\nAtenciosamente,\n${user.name}`,
       attachments: [
         {
-          name: `Relatorio_Horas_${nomeMesSeguro}_${anoAtual}.xlsx`,
+          name: `Relatório_horas_${nomeMesSeguro}_${anoAtual}.xlsx`,
           content: buffer
         }
       ]
