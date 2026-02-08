@@ -37,7 +37,6 @@ export class SpreadsheetService implements ISpreadsheetService {
       throw new Error("E-mail do gestor não encontrado para este usuário.");
     }
 
-    // 2. Lógica de Datas e Feriados
     const dataBase = new Date(anoAtual, numeroMes, 1);
     const diasDoMes = eachDayOfInterval({
       start: startOfMonth(dataBase),
@@ -52,11 +51,9 @@ export class SpreadsheetService implements ISpreadsheetService {
       return !eFds && !eFer;
     });
 
-    // 3. Distribuição de Horas
     const horasPorDia = Math.floor(horas / diasTrabalho.length);
     let horasRestantes = horas % diasTrabalho.length;
 
-    // 4. Preparação dos dados
     const linhasParaPlanilha = diasDoMes.map(dia => {
       const dataFormatada = format(dia, 'MM-dd');
       const eFds = isWeekend(dia);
@@ -79,7 +76,6 @@ export class SpreadsheetService implements ISpreadsheetService {
       };
     });
 
-    // 5. Geração do Buffer via ExcelProvider
     const nomeMesSeguro = mesVigente.replace(/[/\\?*:[\]]/g, '-');
     const nomeAba = `Horas - ${nomeMesSeguro} ${anoAtual}`;
     
@@ -100,7 +96,6 @@ export class SpreadsheetService implements ISpreadsheetService {
       }
     );
 
-    // 6. Envio do E-mail
     const nomeArquivo = `Relatório_horas_${nomeMesSeguro}_${anoAtual}.xlsx`;
 
     await this.mailProvider.sendMail({
@@ -124,7 +119,7 @@ export class SpreadsheetService implements ISpreadsheetService {
     
     const linhasFormatadas = lancamentos.map(l => ({
       data: format(new Date(l.data), 'dd/MM/yyyy'),
-      diaSemana: l.diaSemana, // Já vem do Flutter/GetPrepare
+      diaSemana: l.diaSemana, 
       horasDia: l.horas
     }));
 
@@ -134,7 +129,6 @@ export class SpreadsheetService implements ISpreadsheetService {
       { header: 'HORAS', key: 'horasDia' }
     ];
 
-    // 3. Chama o ExcelProvider (usando aquela interface bonitona que criamos)
     const buffer = await this.excelProvider.generateBuffer(
       'Relatório de Horas',
       colunas,
@@ -147,7 +141,6 @@ export class SpreadsheetService implements ISpreadsheetService {
       }
     );
 
-    // 4. Dispara o E-mail com o anexo
     await this.mailProvider.sendMail({
       to: user.managerEmail!,
       copy: user.receiveCopy ? user.email : undefined!,
