@@ -3,10 +3,15 @@ import { User } from '../../entities/User.js';
 import type { IUserRepository } from '../../repositories/interface/IUserRepository.js';
 import type { IUserService } from '../interface/IUserService.js';
 
-export class UserService implements IUserService {
-  constructor(private userRepository: IUserRepository) {}
 
-  // CREATE: Lógica de cadastro
+
+
+export class UserService implements IUserService {
+  constructor(
+    private userRepository: IUserRepository
+
+  ){}
+
   async create({ name, email, password, companyName, managerEmail, receiveCopy}: User): Promise<void> {
     const userAlreadyExists = await this.userRepository.findByEmail(email);
 
@@ -14,7 +19,7 @@ export class UserService implements IUserService {
       throw new Error("Usuário já cadastrado com este e-mail.");
     }
 
-    const passwordHash = await hash(password, 8);
+    const passwordHash = await hash(String(password), 8);
 
     const user = new User();
     Object.assign(user, {
@@ -30,12 +35,10 @@ export class UserService implements IUserService {
     await this.userRepository.create(user);
   }
 
-  // LIST: Retorna todos os usuários
   async findAll(): Promise<User[]> {
     return await this.userRepository.list();
   }
 
-  // FIND BY ID: Busca um usuário específico
   async findById(id: string): Promise<User | null> {
     const user = await this.userRepository.findById(id);
     if (!user) {
@@ -44,7 +47,6 @@ export class UserService implements IUserService {
     return user;
   }
 
-  // UPDATE: Altera dados e trata a nova senha, se houver
   async update(id: string, data: Partial<User>): Promise<void> {
     const user = await this.userRepository.findById(id);
 
@@ -52,7 +54,6 @@ export class UserService implements IUserService {
       throw new Error("Usuário não encontrado.");
     }
 
-    // Se o usuário estiver enviando uma nova senha, precisamos gerar o hash dela
     if (data.password) {
       data.password = await hash(data.password, 8);
     }
@@ -67,4 +68,6 @@ export class UserService implements IUserService {
 
     await this.userRepository.update(id, data);
   }
+
+
 }

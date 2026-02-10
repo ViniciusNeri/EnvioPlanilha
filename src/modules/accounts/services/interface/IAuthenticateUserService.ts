@@ -1,4 +1,5 @@
 // src/modules/accounts/services/IAuthenticateUserService.ts
+import type { Signup } from '../../entities/Signup.js';
 import { User } from '../../entities/User.js';
 
 export interface IAuthenticateResponse {
@@ -12,4 +13,6 @@ export interface IAuthenticateResponse {
 
 export interface IAuthenticateUserService {
   execute(email: string, password: string): Promise<IAuthenticateResponse>;
+  signup(data: User): Promise<Signup>;
+  signupWithCode(signup: Signup): Promise<IAuthenticateResponse>;
 }

@@ -5,7 +5,6 @@ export class UserController {
 
     constructor(private userService: IUserService) {}
   
-  // POST /users
   async create(req: Request, res: Response): Promise<Response> {
     try {
       const { name, email, password, companyName, managerEmail, receiveCopy } = req.body;
@@ -18,12 +17,10 @@ export class UserController {
     }
   }
 
-  // GET /users
   async list(req: Request, res: Response): Promise<Response> {
     try {
       const users = await this.userService.findAll();
       
-      // Mapeamos para não retornar a senha, mesmo que o Repository já filtre
       const formattedUsers = users.map(user => {
         const { password, ...rest } = user;
         return rest;
@@ -35,7 +32,6 @@ export class UserController {
     }
   }
 
-  // GET /users/:id
   async show(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
@@ -57,11 +53,10 @@ export class UserController {
     }
   }
 
-  // PUT /users/:id
   async update(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const data = req.body; // Partial<User>
+      const data = req.body; 
 
       if (!id || typeof id !== 'string') {
             return res.status(400).json({ error: "ID inválido ou não fornecido." });
@@ -74,4 +69,6 @@ export class UserController {
       return res.status(400).json({ error: error.message });
     }
   }
+
+
 }

@@ -43,7 +43,7 @@ export class ExcelProvider implements IExcelProvider {
     sheet.columns = [
       { key: 'data', width: 18 },
       { key: 'diaSemana', width: 25 },
-      { key: 'horasDia', width: 18 },
+      { key: 'horasDia', width: 22 },
     ];
   }
 
