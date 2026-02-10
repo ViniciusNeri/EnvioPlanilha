@@ -25,10 +25,11 @@ routes.post('/users', (req, res) => userController.create(req, res));
 routes.get('/users', (req, res) => userController.list(req, res));
 routes.get('/users/:id', (req, res) => userController.show(req, res));
 routes.put('/users/:id', (req, res) => userController.update(req, res));
-routes.post('/users/signup', (req, res) => userController.signup(req, res));
-routes.post('/users/signup/confirm', (req, res) => userController.confirmSignup(req, res));
 
-routes.post('/sessions', (req, res) => authenticateController.handle(req, res));
+
+routes.post('/auth/sessions', (req, res) => authenticateController.handle(req, res));
+routes.post('/auth/signup', (req, res) => authenticateController.signup(req, res));
+routes.post('/auth/signup/confirm', (req, res) => authenticateController.confirmSignup(req, res));
 
 
 export { routes };

@@ -14,9 +14,9 @@ const mailProvider = new BrevoMailProvider();
 const excelProvider = new ExcelProvider();
 
 const userRepository = new MongoUserRepository();
-const userService = new UserService(userRepository, mailProvider);
+const userService = new UserService(userRepository);
 const userController = new UserController(userService);
-const authenticateUserService = new AuthenticateUserService(userRepository);
+const authenticateUserService = new AuthenticateUserService(userRepository, mailProvider, userService);
 const authenticateController = new AuthenticateController(authenticateUserService);
 const hybridHolidayRepository = new HybridHolidayRepository();
 
