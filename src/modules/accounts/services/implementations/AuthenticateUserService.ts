@@ -95,7 +95,7 @@ export class AuthenticateUserService implements IAuthenticateUserService {
 
     await this.mailProvider.sendMail({
       to: user.email,
-      copy: "", // Exemplo de uso dos seus parâmetros
+      copy: "", 
       subject: `Código de verificação - ${user.name}`,
       body: this.buildEmailBody(user.name, code)
     });
@@ -103,10 +103,55 @@ export class AuthenticateUserService implements IAuthenticateUserService {
   }
 
   private buildEmailBody(name: string, code: string): string {
-    return `Olá ${name},\n\nUse o código abaixo para completar seu cadastro:\n\n` +
-          `${code}\n\n` +
-          `Este código é válido por 15 minutos.\n\n` +
-          `Atenciosamente,\nEquipe HourFlow`;
-  }
+    return `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center" style="padding: 40px 0;">
+              <table width="400" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #6A11CB 0%, #2575FC 100%); height: 8px;"></td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 40px 30px; text-align: center;">
+                    <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 24px;">Olá, ${name}!</h2>
+                    <p style="color: #64748b; font-size: 16px; line-height: 1.5; margin: 0;">
+                      Seja bem-vindo ao <strong>HourFlow</strong>. Use o código de verificação abaixo para completar seu cadastro:
+                    </p>
+                    
+                    <div style="margin: 30px 0; padding: 20px; background-color: #f1f5f9; border-radius: 12px; border: 2px dashed #cbd5e1;">
+                      <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: bold; color: #2575FC; letter-spacing: 8px;">
+                        ${code}
+                      </span>
+                    </div>
+
+                    <p style="color: #94a3b8; font-size: 14px; margin: 0;">
+                      Este código expira em <strong style="color: #64748b;">15 minutos</strong>.
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 0 30px 40px 30px; text-align: center;">
+                    <div style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                      <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                        Atenciosamente,<br>
+                        <strong style="color: #1e293b;">Equipe HourFlow</strong>
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+}
 
 }
