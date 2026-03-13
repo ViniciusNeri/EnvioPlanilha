@@ -4,6 +4,8 @@ import cors from 'cors';
 import 'dotenv/config';
 import { routes } from './routes/index.js';
 import mongoose from 'mongoose';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsDoc from 'swagger-jsdoc';
 
 
 class App {
@@ -12,6 +14,7 @@ class App {
   constructor() {
     this.server = express();
     this.middlewares();
+    this.swaggerConfig();
     this.routes();
     this.exceptionHandler();
   }
@@ -31,7 +34,46 @@ class App {
       res.status(500).json({ error: 'Ocorreu um erro interno no servidor.' });
     });
   }
+
+  private swaggerConfig(): void {
+    const swaggerOptions: swaggerJsDoc.Options = {
+      definition: { // Use 'definition' em vez de 'swaggerDefinition' para evitar bugs em versões novas
+        openapi: '3.0.0',
+        info: {
+          title: 'HourFlow API',
+          version: '1.0.0',
+          description: 'Documentação do sistema',
+        },
+        // components: {
+        //   securitySchemes: {
+        //     bearerAuth: {
+        //       type: 'http',
+        //       scheme: 'bearer',
+        //       bearerFormat: 'JWT',
+        //     },
+        //   },
+        // },
+        servers: [
+          {
+            url: '/api/v1', // O Swagger UI já vai entender que é relativo ao host
+          },
+        ],
+      },
+      // MUITO IMPORTANTE: Se estiver usando Windows, o swagger-jsdoc as vezes falha com caminhos relativos
+      // Tente usar o path.resolve ou apenas o caminho direto sem o './'
+      apis: ['./src/routes/*.ts'], 
+    };
+
+    try {
+      const swaggerDocs = swaggerJsDoc(swaggerOptions);
+      this.server.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+    } catch (err) {
+      console.error('❌ Erro ao gerar documentação Swagger:', err);
+    }
+  }
 }
+
+
 
 // Função principal para iniciar a aplicação
 async function startApp() {

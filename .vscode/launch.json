@@ -4,13 +4,11 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Local",
-      "program": "${workspaceFolder}/src/app.js",
-      "restart": true,
-      "runtimeArgs": ["--nolazy"],
+      "name": "Debug dist/app.js",
+      "program": "${workspaceFolder}/dist/app.js",
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }
   ]
 }
